@@ -1,0 +1,29 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-ecommerce
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ecommerce_db
+      MYSQL_USER: ecommerce_user
+      MYSQL_PASSWORD: ecommerce_pass
+    ports:
+        - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin-ecommerce
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "8084:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
