@@ -1,5 +1,8 @@
 server:
   port: 8090
+  error:
+    include-message: always
+    include-binding-errors: always
 
 spring:
   application:
@@ -8,15 +11,48 @@ spring:
   cloud:
     gateway:
       routes:
+        - id: user-service-docs
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/users/v3/api-docs,/api/users/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
+        - id: product-service-docs
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/products/v3/api-docs,/api/products/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
+        - id: cart-service-docs
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/cart/v3/api-docs,/api/cart/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+
         - id: user-service
           uri: http://localhost:8081
           predicates:
             - Path=/api/users/**
+
         - id: product-service
           uri: http://localhost:8082
           predicates:
             - Path=/api/products/**
+
         - id: cart-service
           uri: http://localhost:8083
           predicates:
             - Path=/api/cart/**
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: User Service
+        url: /api/users/v3/api-docs
+      - name: Product Service
+        url: /api/products/v3/api-docs
+      - name: Cart Service
+        url: /api/cart/v3/api-docs

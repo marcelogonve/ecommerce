@@ -21,7 +21,6 @@ public class ProfileResponse {
         this.birthDate = birthDate;
     }
 
-
     public Long getId() {
         return id;
     }

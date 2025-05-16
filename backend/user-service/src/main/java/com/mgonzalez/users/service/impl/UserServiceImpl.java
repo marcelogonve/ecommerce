@@ -69,21 +69,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getCurrentUser(String token) {
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-
-        Session session = sessionRepository.findByAccessToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión no válida o expirada"));
-
-        return session.getUser();
-    }
-
-    @Override
     public LoginResponse refreshAccessToken(String refreshToken) {
         Session session = sessionRepository.findByRefreshToken(refreshToken)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token inválido"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token inválido. No se encuentra en la base de datos."));
 
         if (session.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expirado");
@@ -94,6 +82,30 @@ public class UserServiceImpl implements UserService {
         sessionRepository.save(session);
 
         return new LoginResponse(newAccessToken, session.getAccessToken());
+    }
+
+    @Override
+    public void logout(String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        Session session = sessionRepository.findByAccessToken(token)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Access token inválido. No se encuentra en la base de datos."));
+
+        sessionRepository.delete(session);
+    }
+
+    @Override
+    public User getCurrentUser(String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        Session session = sessionRepository.findByAccessToken(token)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Access token inválido. No se encuentra en la base de datos."));
+
+        return session.getUser();
     }
 
 }
