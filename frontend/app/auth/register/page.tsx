@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
-type Step = "credentials" | "personal" | "address"
+type Step = "credentials" | "personal"
 
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>("credentials")
@@ -32,13 +32,34 @@ export default function RegisterPage() {
     lastName: "",
     birthDate: "",
     address: "",
-    city: "",
-    postalCode: "",
-    country: "",
   })
 
   const updateFormData = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Formatear la fecha al formato YYYY-MM-DD
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return ""
+
+    // Si ya está en formato YYYY-MM-DD, devolverlo tal cual
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString
+    }
+
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return "" // Fecha inválida
+
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, "0")
+      const day = String(date.getDate()).padStart(2, "0")
+
+      return `${year}-${month}-${day}`
+    } catch (error) {
+      console.error("Error al formatear la fecha:", error)
+      return ""
+    }
   }
 
   const handleNext = () => {
@@ -63,37 +84,34 @@ export default function RegisterPage() {
       }
 
       setStep("personal")
-    } else if (step === "personal") {
-      // Validate personal info
-      if (!formData.firstName || !formData.lastName || !formData.birthDate) {
-        toast({
-          title: "Campos incompletos",
-          description: "Por favor completa todos los campos.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      setStep("address")
     }
   }
 
   const handlePrevious = () => {
     if (step === "personal") {
       setStep("credentials")
-    } else if (step === "address") {
-      setStep("personal")
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate address
-    if (!formData.address || !formData.city || !formData.postalCode || !formData.country) {
+    // Validate personal info
+    if (!formData.firstName || !formData.lastName || !formData.birthDate || !formData.address) {
       toast({
         title: "Campos incompletos",
         description: "Por favor completa todos los campos.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validar formato de fecha
+    const formattedDate = formatDate(formData.birthDate)
+    if (!formattedDate) {
+      toast({
+        title: "Fecha inválida",
+        description: "Por favor ingresa una fecha válida en formato YYYY-MM-DD.",
         variant: "destructive",
       })
       return
@@ -107,11 +125,13 @@ export default function RegisterPage() {
         username: formData.username,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        birthDate: formData.birthDate,
+        birthDate: formattedDate,
         email: formData.email,
         password: formData.password,
-        address: `${formData.address}, ${formData.city}, ${formData.postalCode}, ${formData.country}`,
+        address: formData.address,
       }
+
+      console.log("Enviando datos de registro:", userData)
 
       await register(userData)
 
@@ -210,18 +230,14 @@ export default function RegisterPage() {
                   <Label htmlFor="birthDate">Fecha de nacimiento (YYYY-MM-DD)</Label>
                   <Input
                     id="birthDate"
-                    placeholder="YYYY-MM-DD"
+                    type="date"
                     value={formData.birthDate}
                     onChange={(e) => updateFormData("birthDate", e.target.value)}
                     required
+                    className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">Formato: YYYY-MM-DD (ej. 1990-01-31)</p>
                 </div>
-              </>
-            )}
-
-            {step === "address" && (
-              <>
                 <div className="space-y-2">
                   <Label htmlFor="address">Dirección</Label>
                   <Input
@@ -231,40 +247,12 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">Ciudad</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => updateFormData("city", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="postalCode">Código postal</Label>
-                  <Input
-                    id="postalCode"
-                    value={formData.postalCode}
-                    onChange={(e) => updateFormData("postalCode", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">País</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => updateFormData("country", e.target.value)}
-                    required
-                  />
-                </div>
               </>
             )}
 
             <div className="flex items-center justify-center space-x-2">
               <span className={`h-2 w-2 rounded-full ${step === "credentials" ? "bg-primary" : "bg-muted"}`} />
               <span className={`h-2 w-2 rounded-full ${step === "personal" ? "bg-primary" : "bg-muted"}`} />
-              <span className={`h-2 w-2 rounded-full ${step === "address" ? "bg-primary" : "bg-muted"}`} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
@@ -276,7 +264,7 @@ export default function RegisterPage() {
                 </Button>
               )}
 
-              {step !== "address" ? (
+              {step !== "personal" ? (
                 <Button type="button" onClick={handleNext} className="flex-1">
                   Siguiente
                   <ChevronRight className="ml-2 h-4 w-4" />

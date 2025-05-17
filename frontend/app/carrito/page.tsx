@@ -6,10 +6,27 @@ import { useCart } from "@/lib/cart-context"
 import { Trash2, ShoppingBag, ArrowRight } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, clearCart } = useCart()
   const { toast } = useToast()
+  const { isAuthenticated } = useAuth()
+  const router = useRouter()
+
+  // Redirigir si no está autenticado
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Acceso denegado",
+        description: "Debes iniciar sesión para acceder al carrito de compras.",
+        variant: "destructive",
+      })
+      router.push("/auth/login")
+    }
+  }, [isAuthenticated, router, toast])
 
   const handleCheckout = () => {
     toast({
@@ -25,6 +42,10 @@ export default function CartPage() {
         description: "¡Gracias por tu compra!",
       })
     }, 2000)
+  }
+
+  if (!isAuthenticated) {
+    return null // No renderizar nada mientras se redirige
   }
 
   if (items.length === 0) {

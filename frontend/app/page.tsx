@@ -1,10 +1,34 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import ProductList from "@/components/product-list"
-import { products } from "@/lib/data"
+import { fetchProducts, type Product } from "@/lib/api"
+import { Loader2 } from "lucide-react"
 
 export default function Home() {
-  const featuredProducts = products.slice(0, 4)
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoading(true)
+      try {
+        const products = await fetchProducts()
+        // Mostrar solo los primeros 4 productos como destacados
+        setFeaturedProducts(products.slice(0, 4))
+      } catch (err) {
+        setError("Error al cargar los productos")
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProducts()
+  }, [])
 
   return (
     <div className="space-y-12">
@@ -25,16 +49,13 @@ export default function Home() {
                 <Link href="/productos">
                   <Button className="bg-primary text-primary-foreground">Ver productos</Button>
                 </Link>
-                <Link href="/categorias">
-                  <Button variant="outline">Explorar categorías</Button>
-                </Link>
               </div>
             </div>
             <div className="flex items-center justify-center">
               <img
                 alt="Artículos deportivos"
                 className="aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-                src="/placeholder.svg?height=550&width=800"
+                src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               />
             </div>
           </div>
@@ -52,7 +73,25 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-8">
-            <ProductList products={featuredProducts} />
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="mt-4 text-lg">Cargando productos destacados...</p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-lg text-destructive">{error}</p>
+                <Button className="mt-4" onClick={() => window.location.reload()}>
+                  Intentar de nuevo
+                </Button>
+              </div>
+            ) : featuredProducts.length > 0 ? (
+              <ProductList products={featuredProducts} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-lg">No hay productos destacados disponibles en este momento.</p>
+              </div>
+            )}
           </div>
           <div className="mt-8 flex justify-center">
             <Link href="/productos">

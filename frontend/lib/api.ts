@@ -17,6 +17,9 @@ export async function refreshToken(): Promise<boolean> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ refreshToken }),
+      // Añadir configuración CORS
+      mode: "cors",
+      credentials: "include",
     })
 
     if (!response.ok) {
@@ -39,16 +42,27 @@ export async function refreshToken(): Promise<boolean> {
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const { accessToken } = useAuthStore.getState()
 
+  // Configuración base para todas las peticiones
+  const baseOptions: RequestInit = {
+    ...options,
+    mode: "cors",
+    credentials: "include",
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+    },
+  }
+
   // Si no hay token, hacemos la petición sin autenticación
   if (!accessToken) {
-    return fetch(`${API_BASE_URL}${url}`, options)
+    return fetch(`${API_BASE_URL}${url}`, baseOptions)
   }
 
   // Añadimos el token a los headers
   const authOptions = {
-    ...options,
+    ...baseOptions,
     headers: {
-      ...options.headers,
+      ...baseOptions.headers,
       Authorization: `Bearer ${accessToken}`,
     },
   }
@@ -64,9 +78,9 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       const newAccessToken = useAuthStore.getState().accessToken
 
       const newAuthOptions = {
-        ...options,
+        ...baseOptions,
         headers: {
-          ...options.headers,
+          ...baseOptions.headers,
           Authorization: `Bearer ${newAccessToken}`,
         },
       }
@@ -94,13 +108,69 @@ export async function fetchUserProfile(): Promise<User | null> {
   }
 }
 
+// Función para cerrar sesión
+export async function logoutUser(): Promise<boolean> {
+  const { accessToken } = useAuthStore.getState()
+
+  if (!accessToken) {
+    return false
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/logout`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      mode: "cors",
+      credentials: "include",
+    })
+
+    // El backend responde con 204 (No Content) si el logout fue exitoso
+    return response.status === 204
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error)
+    return false
+  }
+}
+
+// Función para obtener todos los productos
+export async function fetchProducts(): Promise<Product[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      mode: "cors",
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      throw new Error("Error al obtener los productos")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error al obtener los productos:", error)
+    return []
+  }
+}
+
 // Tipos
 export type User = {
-  id: string
+  id: string | number
   username: string
   email: string
   firstName: string
   lastName: string
+  address: string
+  birthDate: string
+}
+
+export type Product = {
+  id: number | string
+  name: string
+  price: number
+  image: string
+  category: string
+  description: string
 }
 
 export type LoginResponse = {
@@ -126,6 +196,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ email, password }),
+    mode: "cors",
+    credentials: "include",
   })
 
   if (!response.ok) {
@@ -143,6 +215,8 @@ export async function register(userData: RegisterData): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(userData),
+    mode: "cors",
+    credentials: "include",
   })
 
   if (!response.ok) {

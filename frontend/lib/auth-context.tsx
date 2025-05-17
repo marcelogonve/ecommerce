@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useEffect, type ReactNode } from "react"
 import { useAuthStore, type User } from "@/lib/auth-store"
-import { login, register, fetchUserProfile, type RegisterData } from "@/lib/api"
+import { login, register, fetchUserProfile, logoutUser, type RegisterData } from "@/lib/api"
+import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
 
 type AuthContextType = {
   user: User | null
@@ -10,13 +12,15 @@ type AuthContextType = {
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (userData: RegisterData) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, isLoading, setTokens, setUser, clearAuth, setLoading } = useAuthStore()
+  const { toast } = useToast()
+  const router = useRouter()
 
   // Cargar el perfil del usuario si está autenticado pero no tenemos sus datos
   useEffect(() => {
@@ -81,8 +85,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    setLoading(true)
+
+    try {
+      // Hacer la petición al backend para cerrar sesión
+      const success = await logoutUser()
+
+      // Limpiar el estado de autenticación en el cliente
+      clearAuth()
+
+      // Mostrar mensaje de éxito
+      toast({
+        title: "Sesión cerrada",
+        description: success
+          ? "Sesión cerrada"
+          : "Has cerrado sesión correctamente.",
+      })
+
+      // Redirigir al inicio
+      router.push("/")
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error)
+
+      toast({
+        title: "Problema al cerrar sesión",
+        description: "Hubo un problema con el servidor al tratar de cerrar sesión.",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

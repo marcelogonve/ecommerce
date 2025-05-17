@@ -21,17 +21,15 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
   const { items } = useCart()
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout, isLoading } = useAuth()
 
   const routes = [
     { href: "/", label: "Inicio" },
     { href: "/productos", label: "Productos" },
-    { href: "/categorias", label: "Categorías" },
   ]
 
-  const handleLogout = () => {
-    logout()
-    // Podrías redirigir al usuario a la página de inicio o mostrar un mensaje
+  const handleLogout = async () => {
+    await logout()
   }
 
   return (
@@ -73,7 +71,8 @@ export default function Navbar() {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="relative">
+                  <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500"></div>
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -90,16 +89,17 @@ export default function Navbar() {
                   <Link href="/pedidos">Mis pedidos</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} disabled={isLoading}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesión
+                  {isLoading ? "Cerrando sesión..." : "Cerrar sesión"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Link href="/auth/login">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" className="flex items-center gap-2">
                 <User className="h-5 w-5" />
+                <span className="hidden sm:inline-block">Iniciar sesión</span>
               </Button>
             </Link>
           )}
@@ -127,9 +127,9 @@ export default function Navbar() {
               </Link>
             ))}
             {isAuthenticated ? (
-              <Button variant="ghost" className="justify-start px-0" onClick={handleLogout}>
+              <Button variant="ghost" className="justify-start px-0" onClick={handleLogout} disabled={isLoading}>
                 <LogOut className="mr-2 h-4 w-4" />
-                Cerrar sesión
+                {isLoading ? "Cerrando sesión..." : "Cerrar sesión"}
               </Button>
             ) : (
               <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>

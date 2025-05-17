@@ -1,21 +1,62 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { notFound } from "next/navigation"
-import { products } from "@/lib/data"
+import { useParams, useRouter } from "next/navigation"
+import { fetchProducts, type Product } from "@/lib/api"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 
-interface ProductPageProps {
-  params: {
-    id: string
+export default function ProductPage() {
+  const params = useParams()
+  const router = useRouter()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      setIsLoading(true)
+      try {
+        const products = await fetchProducts()
+        const foundProduct = products.find((p) => p.id.toString() === params.id)
+
+        if (foundProduct) {
+          setProduct(foundProduct)
+        } else {
+          setError("Producto no encontrado")
+          setTimeout(() => {
+            router.push("/productos")
+          }, 2000)
+        }
+      } catch (err) {
+        setError("Error al cargar el producto")
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProduct()
+  }, [params.id, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-lg">Cargando producto...</p>
+      </div>
+    )
   }
-}
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = products.find((p) => p.id === params.id)
-
-  if (!product) {
-    notFound()
+  if (error || !product) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-lg text-destructive">{error || "Producto no encontrado"}</p>
+        <p className="mt-2">Redirigiendo a la página de productos...</p>
+      </div>
+    )
   }
 
   return (

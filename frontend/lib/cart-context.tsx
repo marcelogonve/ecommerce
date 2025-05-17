@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 export type Product = {
-  id: string
+  id: number | string
   name: string
   price: number
   image: string
@@ -19,8 +19,8 @@ export type CartItem = {
 type CartContextType = {
   items: CartItem[]
   addItem: (product: Product) => void
-  removeItem: (productId: string) => void
-  updateQuantity: (productId: string, quantity: number) => void
+  removeItem: (productId: string | number) => void
+  updateQuantity: (productId: string | number, quantity: number) => void
   clearCart: () => void
   total: number
 }
@@ -65,11 +65,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const removeItem = (productId: string) => {
+  const removeItem = (productId: string | number) => {
     setItems((prevItems) => prevItems.filter((item) => item.product.id !== productId))
   }
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string | number, quantity: number) => {
     if (quantity <= 0) {
       removeItem(productId)
       return
